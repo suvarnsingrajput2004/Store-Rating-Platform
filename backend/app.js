@@ -12,8 +12,32 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
-// Set up CORS
-app.use(cors());
+// ---------------------------------------------------------------------------
+// CORS Configuration
+// In production: restrict to origins listed in ALLOWED_ORIGINS (comma-separated).
+// In development / when ALLOWED_ORIGINS is unset: allow all origins so that
+// local Docker Compose continues to work without any changes.
+// ---------------------------------------------------------------------------
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : [];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no Origin header (curl, health checks, same-origin)
+      if (!origin) return callback(null, true);
+      // In development or when no origin list is configured, allow everything
+      if (process.env.NODE_ENV !== 'production' || allowedOrigins.length === 0) {
+        return callback(null, true);
+      }
+      // Production: check against the allow-list
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS: Origin "${origin}" is not allowed`));
+    },
+    credentials: true,
+  })
+);
 
 // Request Logging
 if (process.env.NODE_ENV === 'production') {

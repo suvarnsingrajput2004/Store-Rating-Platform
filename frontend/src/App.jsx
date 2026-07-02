@@ -1,9 +1,14 @@
-import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Snackbar, Alert } from '@mui/material';
+
 import { AuthProvider } from './context/AuthContext';
 import AppRoutes from './routes/AppRoutes';
+import useAuth from './hooks/useAuth';
+import useIdleTimeout from './hooks/useIdleTimeout';
+import SessionTimeoutDialog from './components/common/SessionTimeoutDialog';
 
 // Create a custom dark theme matching premium design requirements
 const darkTheme = createTheme({
@@ -68,13 +73,57 @@ const darkTheme = createTheme({
   },
 });
 
+
+const SessionManager = ({ children }) => {
+  const { isAuthenticated, logout } = useAuth();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const handleLogout = React.useCallback((reason) => {
+    console.log('[SessionManager] handleLogout called, reason:', reason);
+    logout();
+    if (reason === 'idle_timeout') {
+      setSnackbarOpen(true);
+    }
+  }, [logout]);
+
+  const { isWarningOpen, stayLoggedIn, logoutNow } = useIdleTimeout(isAuthenticated, handleLogout);
+
+  // Debug: confirm this component is alive and what state it sees
+  React.useEffect(() => {
+    console.log('[SessionManager] mounted/updated — isAuthenticated:', isAuthenticated, '— isWarningOpen:', isWarningOpen);
+  }, [isAuthenticated, isWarningOpen]);
+
+  return (
+    <>
+      <SessionTimeoutDialog 
+        open={isWarningOpen} 
+        onStayLoggedIn={stayLoggedIn} 
+        onLogoutNow={logoutNow} 
+      />
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="warning" onClose={() => setSnackbarOpen(false)}>
+          Session expired due to inactivity. Please login again.
+        </Alert>
+      </Snackbar>
+      {children}
+    </>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <SessionManager>
+            <AppRoutes />
+          </SessionManager>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

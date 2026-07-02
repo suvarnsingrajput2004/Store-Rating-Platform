@@ -1,16 +1,16 @@
-/**
- * db-probe.js  —  Tests MySQL connection using .env credentials
- * Run: node scripts/db-probe.js
- */
+**
+ * db - probe.js  —  Tests MySQL connection using.env credentials
+  * Run: node scripts / db - probe.js
+    */
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
 async function probe() {
   const cfg = {
-    host:     process.env.DB_HOST,
-    user:     process.env.DB_USER,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    port:     parseInt(process.env.DB_PORT || '3306')
+    port: parseInt(process.env.DB_PORT || '3306')
   };
 
   console.log('\n  DB_HOST    :', cfg.host);

@@ -39,19 +39,30 @@ export const AuthProvider = ({ children }) => {
       handleLogoutState();
     };
 
+    // Cross-tab synchronization
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' && e.newValue === null) {
+        handleLogoutState();
+      }
+    };
+
     window.addEventListener('auth-expired', handleAuthExpired);
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       window.removeEventListener('auth-expired', handleAuthExpired);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
-  const handleLogoutState = () => {
+  const handleLogoutState = React.useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.clear(); // Clear any session storage data
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
   const login = async (credentials) => {
     setIsLoading(true);
@@ -102,7 +113,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = React.useCallback(async () => {
     setIsLoading(true);
     try {
       await authService.logout();
@@ -112,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       handleLogoutState();
       setIsLoading(false);
     }
-  };
+  }, [handleLogoutState]);
 
   return (
     <AuthContext.Provider

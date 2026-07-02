@@ -24,9 +24,15 @@ const authenticate = async (req, res, next) => {
       req.user = decoded; // Contains id, email, role, etc.
       next();
     } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Session expired'
+        });
+      }
       return res.status(401).json({
         success: false,
-        message: 'Invalid or expired token.'
+        message: 'Invalid token.'
       });
     }
   } catch (err) {
@@ -47,12 +53,14 @@ const authorize = (...allowedRoles) => {
       });
     }
 
+
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Access forbidden. Insufficient permissions.'
       });
     }
+    
 
     next();
   };
