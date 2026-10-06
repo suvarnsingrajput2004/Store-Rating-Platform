@@ -56,3 +56,29 @@ jobs:
 
       - name: Check Backend
         run: node --check server.js
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+          tags: store-rating-frontend:ci
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+          tags: store-rating-backend:ci
